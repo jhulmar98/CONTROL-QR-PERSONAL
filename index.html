@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Sistema Integral de Monitoreo</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="styles.css" />
+
+  
+</head>
+<body>
+  <div class="app">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-text">
+          <strong>SISTEMA INTEGRAL DE MONITOREO Y ALERTA</strong>
+        </div>
+      </div>
+      <div class="top-actions"></div>
+    </header>
+
+    <main class="layout">
+      <!-- ===== Sidebar ===== -->
+      <aside class="sidebar" aria-label="Filtros">
+        <!-- Serenos -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">PERSONAL</h2>
+            <span class="chip" id="countSerenos">0</span>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl" for="fechaSerenos">Fecha</label>
+              <div class="input affix">
+                <span class="affix-l"></span>
+                <input id="fechaSerenos" type="date" />
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="lbl">Turno</span>
+              <div class="segmented four tiny" role="radiogroup" aria-label="Turno Serenos">
+                <input type="radio" name="turnoSerenos" id="ts-todos" value="todos" />
+                <label for="ts-todos">Todo</label>
+
+                <input type="radio" name="turnoSerenos" id="ts-t1" value="t1" />
+                <label for="ts-t1">T1</label>
+
+                <input type="radio" name="turnoSerenos" id="ts-t2" value="t2" />
+                <label for="ts-t2">T2</label>
+
+                <input type="radio" name="turnoSerenos" id="ts-t3" value="t3" />
+                <label for="ts-t3">T3</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="lbl" for="buscador">Nombre o Código</label>
+              <div class="input affix">
+                <input id="buscador" type="search" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="check">
+                <input id="soloComentario" type="checkbox" />
+                <span>Con comentario</span>
+              </label>
+              <div class="btn-row compact">
+                <button id="btnHoyS" class="btn xs">Hoy</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Alertas -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">ALERTAS</h2>
+            <span class="chip alert" id="countAlertas">0</span>
+          </div>
+
+          <div class="field">
+            <div class="segmented two tiny" role="radiogroup" aria-label="Modo Alertas">
+              <input type="radio" name="alertMode" id="am-active" value="active" />
+              <label for="am-active">Activas</label>
+
+              <input type="radio" name="alertMode" id="am-range" value="range" />
+              <label for="am-range">Por fecha</label>
+            </div>
+          </div>
+
+          <div id="alertFilters" class="grid-2">
+            <div class="field">
+              <label class="lbl" for="fechaAlertas">Fecha</label>
+              <div class="input affix">
+                <span class="affix-l"></span>
+                <input id="fechaAlertas" type="date" />
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="lbl">Turno</span>
+              <div class="segmented four tiny" role="radiogroup" aria-label="Turno Alertas">
+                <input type="radio" name="turnoAlertas" id="ta-todos" value="todos" />
+                <label for="ta-todos">Todo</label>
+
+                <input type="radio" name="turnoAlertas" id="ta-t1" value="t1" />
+                <label for="ta-t1">T1</label>
+
+                <input type="radio" name="turnoAlertas" id="ta-t2" value="t2" />
+                <label for="ta-t2">T2</label>
+
+                <input type="radio" name="turnoAlertas" id="ta-t3" value="t3" />
+                <label for="ta-t3">T3</label>
+              </div>
+              <div class="btn-row compact">
+                <button id="btnHoyA" class="btn xs">Hoy</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reportes -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Reportes</h2>
+          </div>
+          <div class="btn-row compact">
+            <button id="btnReporteSerenos" class="btn outline">📊 Reporte Serenos</button>
+            <button id="btnReporteIncidentes" class="btn outline">📊 Reporte Incidentes</button>
+            <button id="btnReporteCalificaciones" class="btn outline">📋 Ver calificaciones</button>
+          </div>
+        </section>
+      </aside>
+
+      <!-- ===== Mapa ===== -->
+      <section class="map-wrap">
+        <div id="map"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===== MODAL REPORTES ===== -->
+  <div id="modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modalTitle">Reporte</h3>
+        <button id="modalClose" class="modal-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="toolbar">
+          <div class="segmented two tiny" role="radiogroup" aria-label="Modo Reporte">
+            <input type="radio" name="repMode" id="rep-all" value="all" />
+            <label for="rep-all">Todo</label>
+
+            <input type="radio" name="repMode" id="rep-day" value="day" />
+            <label for="rep-day">Por día</label>
+          </div>
+
+          <div id="repFilters" class="grid-2" style="display:none; align-items:end;">
+            <div class="field">
+              <label class="lbl" for="repDate">Fecha</label>
+              <div class="input affix">
+                <span class="affix-l"></span>
+                <input id="repDate" type="date" />
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="lbl">Turno</span>
+              <div class="segmented four tiny" role="radiogroup" aria-label="Turno Reporte">
+                <input type="radio" name="repTurno" id="rep-todos" value="todos" />
+                <label for="rep-todos">Todos</label>
+
+                <input type="radio" name="repTurno" id="rep-t1" value="t1" />
+                <label for="rep-t1">T1</label>
+
+                <input type="radio" name="repTurno" id="rep-t2" value="t2" />
+                <label for="rep-t2">T2</label>
+
+                <input type="radio" name="repTurno" id="rep-t3" value="t3" />
+                <label for="rep-t3">T3</label>
+              </div>
+            </div>
+            <div class="btn-row compact" style="grid-column:1 / -1;">
+              <button id="btnRepAplicar" class="btn small">Aplicar</button>
+            </div>
+          </div>
+
+          <div style="flex:1"></div>
+          <button id="btnExport" class="btn small">Exportar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tbl" id="reportTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       Firebase + Lógica de app
+       ========================= -->
+  <script type="module">
+    /* Firebase (v10 modular) */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy }
+      from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    /* App Serenos */
+    const cfgS = {
+      apiKey: "AIzaSyA-bTOSM1OCc1HNaUrFTqMAQKl6rLXOu3w",
+      authDomain: "asistencia-serenazgo.firebaseapp.com",
+      projectId: "asistencia-serenazgo",
+      storageBucket: "asistencia-serenazgo.firebasestorage.app",
+      messagingSenderId: "437643878125",
+      appId: "1:437643878125:web:b4ebfe2657c2d52e65b6e4"
+    };
+    const appS = initializeApp(cfgS);
+    const dbS  = getFirestore(appS);
+
+    /* App Alertas (y Calificaciones) */
+    const cfgA = {
+      apiKey: "AIzaSyDOTV9g3daZttWK16p9Bmcl7N3LoXqJaAU",
+      authDomain: "vecinos-37d87.firebaseapp.com",
+      projectId: "vecinos-37d87",
+      storageBucket: "vecinos-37d87.firebasestorage.app",
+      messagingSenderId: "730270250892",
+      appId: "1:730270250892:web:211880d8827f499d2808a9",
+      measurementId: "G-EVVVLMYE4V"
+    };
+    const appA = initializeApp(cfgA, "vecinos");
+    const dbA  = getFirestore(appA);
+
+    /* App Lugares (Geofences) */
+    const cfgL = {
+      apiKey: "AIzaSyDYvq2uVd5MuTLOGZu4QoOn-LFr0gMlye4",
+      authDomain: "lugares-aa4be.firebaseapp.com",
+      projectId: "lugares-aa4be",
+      storageBucket: "lugares-aa4be.firebasestorage.app",
+      messagingSenderId: "351424017310",
+      appId: "1:351424017310:web:99816d2535018e1c711c8f",
+      measurementId: "G-51KS7PLTEP"
+    };
+    const appL = initializeApp(cfgL, "lugares");
+    const dbL  = getFirestore(appL);
+
+    /* Leaflet */
+    const map = L.map("map", { zoomControl:true, preferCanvas:true }).setView([-12.0464, -77.0428], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    const capaSerenos   = L.layerGroup().addTo(map);
+    const capaAlertas   = L.layerGroup().addTo(map);
+    const capaGeofences = L.layerGroup().addTo(map);
+
+    /* ===== Leyenda "Serenos por Sector" en el mapa ===== */
+    const legendWrap = document.createElement('div');
+    legendWrap.className = 'sector-legend';
+    legendWrap.innerHTML = `
+      <div class="card">
+        <div class="title">SERENOS POR SECTOR</div>
+        <div id="chipsSectors" class="chips"></div>
+      </div>`;
+    map.getContainer().appendChild(legendWrap);
+    L.DomEvent.disableClickPropagation(legendWrap);
+    const chipsBox = legendWrap.querySelector('#chipsSectors');
+
+    /* Utils */
+    const toNum = v => (typeof v === "number" ? v : parseFloat(String(v).replace(",", ".")));
+    const norm  = s => (s ?? "").toString().normalize("NFD").replace(/\p{Diacritic}/gu,"").trim().toLowerCase();
+    const parseFecha = v => { const [y,m,d]=v.split("-").map(n=>+n); return new Date(y,m-1,d,0,0,0,0); };
+
+    // Turnos T1/T2/T3
+    const intervaloTurno = (base, turno)=>{
+      const start = new Date(base), end = new Date(base);
+      if (turno==="t1"){ start.setHours(6,0,0,0);  end.setHours(14,0,0,0); }
+      else if (turno==="t2"){ start.setHours(14,0,0,0); end.setHours(22,0,0,0); }
+      else if (turno==="t3"){ start.setHours(22,0,0,0); end.setDate(end.getDate()+1); end.setHours(6,0,0,0); }
+      else { start.setHours(0,0,0,0); end.setDate(end.getDate()+1); end.setHours(0,0,0,0); }
+      return {start,end};
+    };
+
+    const todayTurnDefaults = ()=>{
+      const now = new Date(); const base = new Date(now);
+      let turno = "t1";
+      if (now.getHours() < 6) { base.setDate(base.getDate()-1); turno="t3"; }
+      else if (now.getHours() < 14) turno="t1";
+      else if (now.getHours() < 22) turno="t2";
+      else turno="t3";
+      const y=base.getFullYear(), m=String(base.getMonth()+1).padStart(2,"0"), d=String(base.getDate()).padStart(2,"0");
+      return { fecha:`${y}-${m}-${d}`, turno };
+    };
+
+    const getCoords = (o)=>{
+      const lat = toNum(o.lat ?? o.latitude ?? o.latitud);
+      const lng = toNum(o.lng ?? o.long ?? o.lon ?? o.longitude ?? o.longitud);
+      if (Number.isNaN(lat) || Number.isNaN(lng) || lat<-90 || lat>90 || lng<-180 || lng>180) return null;
+      return [lat,lng];
+    };
+    const getWhenS = (d)=>{
+      const t=d.timestamp;
+      if (t?.toDate) return t.toDate();
+      if (typeof t?.seconds==="number") return new Date(t.seconds*1000);
+      if (typeof t==="string"){ const dt=new Date(t); if(!isNaN(dt)) return dt; }
+      if (d.fecha){ const [dd,mm,yy]=(d.fecha+"").split(/[\/\-]/).map(n=>+n); return new Date(yy,mm-1,dd); }
+      return new Date(0);
+    };
+    const getWhenA = (d)=>{
+      const ct=d?.createdAt;
+      if (ct?.toDate) return ct.toDate();
+      if (typeof ct?.seconds==="number") return new Date(ct.seconds*1000);
+      if (typeof ct==="number") return new Date(ct);
+      if (typeof ct==="string"){ const x=new Date(ct); if(!isNaN(x)) return x; }
+      return new Date(0);
+    };
+
+    /* === Calificaciones: parseo fecha/hora (dd/mm/yyyy + 12h) === */
+    const parseFechaHora = (fechaStr, horaStr)=>{
+      let dd, mm, yy;
+      if (typeof fechaStr === "string" && fechaStr.includes("/")){
+        const [d,m,y] = fechaStr.split("/").map(x=>parseInt(x,10));
+        dd=d; mm=m; yy=y;
+      }
+      const base = (dd && mm && yy) ? new Date(yy,mm-1,dd,0,0,0,0) : new Date(0);
+      if (typeof horaStr === "string"){
+        const m = horaStr.trim().match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
+        if (m){
+          let h = parseInt(m[1],10)%12;
+          const min = parseInt(m[2],10);
+          const ampm = m[3].toUpperCase();
+          if (ampm === "PM") h += 12;
+          base.setHours(h, min, 0, 0);
+        }
+      }
+      return base;
+    };
+
+    /* Iconos */
+    const iconSereno = ()=>L.divIcon({
+      html:`<div style="font-size:22px; line-height:22px;">👤</div>`,
+      className:"", iconSize:[22,22], iconAnchor:[11,20], popupAnchor:[0,-18]
+    });
+    const iconAlerta = (pulse=false)=>L.divIcon({
+      html:`<div class="pin red ${pulse?"pulse":""}"><div class="pin-dot">!</div><div class="pin-stick"></div></div>`,
+      className:"pin-wrap", iconSize:[22,32], iconAnchor:[11,30], popupAnchor:[0,-26]
+    });
+
+    /* Popups */
+    const popupS = (d, when)=>{
+      const esc=v=>(v??"").toString().replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]));
+      const c=(d.comentario??"").toString().trim();
+      const fecha = when instanceof Date && !isNaN(when) ? when.toLocaleDateString() : "-";
+      const hora  = when instanceof Date && !isNaN(when) ? when.toLocaleTimeString() : "-";
+      return `<div class="popup">
+        <div class="row"><strong>Nombre:</strong> ${esc(d.nombre||"-")}</div>
+        <div class="row"><strong>DNI:</strong> ${esc(d.dni||"-")}</div>
+        ${d.cargo?`<div class="row"><strong>Cargo:</strong> ${esc(d.cargo)}</div>`:""}
+        <div class="row"><strong>Fecha:</strong> ${fecha}</div>
+        <div class="row"><strong>Hora:</strong> ${hora}</div>
+        ${c?`<div class="row"><strong>Comentario:</strong> ${esc(c)}</div>`:""}
+      </div>`;
+    };
+    const popupA = (d,when)=>{
+      const esc=v=>(v??"").toString().replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]));
+      return `<div class="popup">
+        <div class="row"><strong>Tipo:</strong> ${esc(d.incidente||"Alerta")}</div>
+        <div class="row"><strong>Código:</strong> ${esc(d.usuarioCodigo||"-")}</div>
+        <div class="row"><strong>Nombre:</strong> ${esc(d.usuarioNombre||"-")}</div>
+        <div class="row"><strong>Fecha:</strong> ${when.toLocaleDateString()}</div>
+        <div class="row"><strong>Hora:</strong> ${when.toLocaleTimeString()}</div>
+      </div>`;
+    };
+
+    /* ===== SERENOS (mapa) ===== */
+    const docsS = new Map();
+    const markersS = new Map();
+    const keyFor = d => (d?.dni && String(d.dni).trim()) || (d?.nombre && String(d.nombre).trim()) || "sin-id";
+    let lastLatestSerenos = new Map();
+
+    function setSerenoPopup(marker, data, when){
+      const pop = marker.getPopup();
+      if (pop) pop.setContent(popupS(data, when));
+      else marker.bindPopup(popupS(data, when));
+    }
+
+    function rebuildSerenos(){
+      const fecha = document.getElementById("fechaSerenos").value;
+      const turno = document.querySelector('input[name="turnoSerenos"]:checked')?.value || "t1";
+      const texto = norm(document.getElementById("buscador").value);
+      const onlyC = document.getElementById("soloComentario").checked;
+
+      const base = parseFecha(fecha);
+      const {start,end} = intervaloTurno(base, turno);
+      const latest = new Map();
+
+      for (const [, rec] of docsS){
+        const { data, when } = rec;
+        const coords = getCoords({lat:data.lat,latitud:data.latitud,latitude:data.latitude,lng:data.lng,longitud:data.longitud,longitude:data.longitude,long:data.long});
+        if (!coords) continue;
+        if (!(when >= start && when < end)) continue;
+
+        const okText = !texto || norm(data.nombre).includes(texto) || norm(String(data.dni||"")).includes(texto);
+        if (!okText) continue;
+        const hasC = !!(data.comentario && String(data.comentario).trim());
+        if (onlyC && !hasC) continue;
+
+        const k=keyFor(data), prev=latest.get(k);
+        if (!prev || when > prev.when) latest.set(k, { data, when, coords, hasC });
+      }
+
+      capaSerenos.clearLayers();
+      const keys = new Set();
+      for (const [k, info] of latest){
+        let rec = markersS.get(k);
+        if (!rec){
+          const m = L.marker(info.coords,{icon:iconSereno()});
+          setSerenoPopup(m, info.data, info.when);
+          rec = { marker:m };
+          markersS.set(k, rec);
+        } else {
+          rec.marker.setLatLng(info.coords).setIcon(iconSereno());
+          setSerenoPopup(rec.marker, info.data, info.when);
+        }
+        capaSerenos.addLayer(rec.marker);
+        keys.add(k);
+      }
+      for (const [k, rec] of markersS) if (!keys.has(k)) capaSerenos.removeLayer(rec.marker);
+
+      document.getElementById("countSerenos").textContent = keys.size;
+
+      lastLatestSerenos = latest;
+      updateSectorCountsFrom(latest);
+    }
+
+    onSnapshot(query(collection(dbS,"asistencias"), orderBy("timestamp","desc")), (snap)=>{
+      docsS.clear();
+      snap.docs.forEach(d => {
+        const data = d.data() || {};
+        docsS.set(d.id, { data, when: getWhenS(data) });
+      });
+      rebuildSerenos();
+    });
+
+    /* ===== ALERTAS ===== */
+    const docsA = new Map();
+    let initializedA = false;
+    const markersA = new Map();
+
+    function rebuildAlertas(){
+      const mode = document.querySelector('input[name="alertMode"]:checked')?.value || "active";
+      const pulse = (mode === "active");
+
+      capaAlertas.clearLayers();
+      const now = Date.now(), THIRTY = 30*60*1000;
+      let visibles=0;
+
+      let start=null, end=null;
+      if (mode === "range"){
+        const fecha = document.getElementById("fechaAlertas").value;
+        const turno = document.querySelector('input[name="turnoAlertas"]:checked')?.value || "todos";
+        const r = intervaloTurno(parseFecha(fecha), turno); start=r.start; end=r.end;
+      }
+
+      for (const [, rec] of docsA){
+        const coords = getCoords({lat:rec.data.lat,latitud:rec.data.latitud,latitude:rec.data.latitude,lng:rec.data.lng,longitud:rec.data.longitud,longitude:rec.data.longitude});
+        if (!coords) continue;
+
+        const when = rec.when;
+        const include = (mode === "active")
+          ? (now - when.getTime()) <= THIRTY
+          : (when >= start && when < end);
+
+        if (!include) continue;
+
+        let m = markersA.get(rec.id);
+        if (!m){
+          m = L.marker(coords,{icon:iconAlerta(pulse)});
+          m.bindPopup(popupA(rec.data, when));
+          markersA.set(rec.id,m);
+        }else{
+          m.setLatLng(coords).setIcon(iconAlerta(pulse));
+          const p = m.getPopup(); if (p) p.setContent(popupA(rec.data, when));
+        }
+        capaAlertas.addLayer(m);
+        visibles++;
+      }
+      document.getElementById("countAlertas").textContent = visibles;
+    }
+
+    onSnapshot(collection(dbA,"alertas"), (snap)=>{
+      const newIds = [];
+      snap.docChanges().forEach(ch=>{
+        const id = ch.doc.id;
+        if (ch.type === "removed"){
+          docsA.delete(id);
+          const m = markersA.get(id); if (m){ capaAlertas.removeLayer(m); markersA.delete(id); }
+          return;
+        }
+        const data = ch.doc.data() || {};
+        docsA.set(id, { id, data, when: getWhenA(data) });
+        if (initializedA && ch.type === "added") newIds.push(id);
+      });
+
+      rebuildAlertas();
+
+      if (initializedA && newIds.length){
+        const mode = document.querySelector('input[name="alertMode"]:checked')?.value || "active";
+        const now = Date.now(), THIRTY = 30*60*1000;
+
+        for (const id of newIds){
+          const rec = docsA.get(id);
+          if (!rec) continue;
+          const coords = getCoords({lat:rec.data.lat,latitud:rec.data.latitud,latitude:rec.data.latitude,lng:rec.data.lng,longitud:rec.data.longitud,longitude:rec.data.longitude});
+          if (!coords) continue;
+
+          let visible = false;
+          if (mode === "active"){
+            visible = (now - rec.when.getTime()) <= THIRTY;
+          } else {
+            const fecha = document.getElementById("fechaAlertas").value;
+            const turno = document.querySelector('input[name="turnoAlertas"]:checked')?.value || "todos";
+            const {start,end} = intervaloTurno(parseFecha(fecha), turno);
+            visible = (rec.when >= start && rec.when < end);
+          }
+          if (!visible) continue;
+
+          map.flyTo(coords, 17, { animate:true, duration:0.8 });
+          const m = markersA.get(id);
+          if (m) setTimeout(()=> m.openPopup(), 300);
+          break;
+        }
+      }
+
+      if (!initializedA) initializedA = true;
+    });
+
+    setInterval(()=>{ if (document.getElementById("am-active").checked) rebuildAlertas(); }, 15000);
+
+    /* ===== CALIFICACIONES (solo con comentario) ===== */
+    let allCalifRaw = [];
+    const getWhenC = (d)=>{
+      if (d?.createdAt?.toDate) return d.createdAt.toDate();
+      if (typeof d?.createdAt?.seconds === "number") return new Date(d.createdAt.seconds*1000);
+      return parseFechaHora(d.fecha, d.hora);
+    };
+
+    onSnapshot(collection(dbA,"calificaciones"), (snap)=>{
+      allCalifRaw = snap.docs.map(doc=>{
+        const data = doc.data()||{};
+        const comentario = (data.comentario||"").toString().trim();
+        if (!comentario) return null;
+        const when = getWhenC(data);
+        const lat = toNum(data.latitud), lng = toNum(data.longitud);
+        const lugar = (!Number.isNaN(lat) && !Number.isNaN(lng)) ? `${lat}, ${lng}` : "";
+        return {
+          DNI: data.dni || "",
+          Nombre: data.nombre || "",
+          Comentario: comentario,
+          Cargo: data.cargo || "",
+          Rating: (data.rating ?? "").toString(),
+          Fecha: when instanceof Date && !isNaN(when) ? when.toLocaleDateString() : (data.fecha||""),
+          Hora : when instanceof Date && !isNaN(when) ? when.toLocaleTimeString() : (data.hora||""),
+          Lugar: lugar,
+          "Usuario Código": data.usuarioCodigo || "",
+          "Usuario Nombre": data.usuarioNombre || "",
+          _when: when
+        };
+      }).filter(Boolean).sort((a,b)=> b._when - a._when);
+    });
+
+    /* ===== GEO CERCAS (Lugares / geofences) ===== */
+    const geofenceById = new Map();     // id -> {id, nombre, path, _color}
+    const geofenceLayers = new Map();   // id -> Leaflet polygon
+    let legendDiv = null;
+    let legendVisible = false;
+
+    // Control de botón GEOCERCAS
+    const GeoButton = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd: function(){
+        const wrap = L.DomUtil.create('div','geo-ctrl-wrap');
+        wrap.innerHTML = `<button id="btnGeo" class="btn small outline">GEOCERCAS</button>`;
+        L.DomEvent.disableClickPropagation(wrap);
+        return wrap;
+      }
+    });
+    map.addControl(new GeoButton());
+
+    // Leyenda
+    const legendCtrl = L.control({position:'topright'});
+    legendCtrl.onAdd = () => {
+      const d = L.DomUtil.create('div','geo-ctrl-wrap geo-legend');
+      d.id = 'geoLegend';
+      d.innerHTML = `<h4></h4><div id="geoItems"></div>`; //AGREGAR ENTRE EL H4 TITULO SI DESEA DE LEYENDA GEO CERCA
+      L.DomEvent.disableClickPropagation(d);
+      legendDiv = d;
+      d.style.display = 'none';
+      return d;
+    };
+    legendCtrl.addTo(map);
+
+    const parsePath = (arr)=> (Array.isArray(arr)?arr:[])
+      .map(p=>[toNum(p.lat), toNum(p.lng)])
+      .filter(([a,b])=>!Number.isNaN(a)&&!Number.isNaN(b));
+
+    const defaultColors = ["#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899","#22c55e"];
+
+    function drawOneGeofence(g, idx){
+      const id = g.id;
+      const path = parsePath(g.path||[]);
+      if (!path.length) return;
+      const color = g.color || defaultColors[idx % defaultColors.length];
+      g._color = color;
+
+      const closed = path.length>2 && (path[0][0]!==path[path.length-1][0] || path[0][1]!==path[path.length-1][1]) ? [...path, path[0]] : path;
+
+      let poly = geofenceLayers.get(id);
+      if (!poly){
+        poly = L.polygon(closed, { color, weight:2, fillColor:color, fillOpacity:.18 });
+        capaGeofences.addLayer(poly);
+        geofenceLayers.set(id, poly);
+      } else {
+        poly.setLatLngs(closed).setStyle({ color, fillColor:color, fillOpacity:.18, weight:2 });
+      }
+    }
+
+    // Extrae el número del nombre del sector (Sector 04 -> 4)
+    const sectorNumber = (name)=>{
+      const m = String(name || "").match(/(\d+)/);
+      return m ? parseInt(m[1], 10) : Number.POSITIVE_INFINITY;
+    };
+
+    function rebuildLegend(){
+      if (!legendDiv) return;
+      const items = document.getElementById('geoItems');
+      items.innerHTML = '';
+
+      const list = Array.from(geofenceById.values()).sort((a,b)=>{
+        const na = sectorNumber(a.nombre || a.name);
+        const nb = sectorNumber(b.nombre || b.name);
+        if (na !== nb) return na - nb;
+        return String(a.nombre || a.name || '').localeCompare(String(b.nombre || b.name || ''));
+      });
+
+      for (const g of list){
+        const el = document.createElement('div');
+        el.className = 'item';
+        el.textContent = g.nombre || g.name || 'Sector';
+        el.style.setProperty('--swatch', g._color || g.color || '#9ca3af');
+        items.appendChild(el);
+      }
+    }
+
+    function toggleLegend(show){
+      legendVisible = (show!==undefined) ? show : !legendVisible;
+      if (legendDiv) legendDiv.style.display = legendVisible ? 'block' : 'none';
+    }
+
+    /* ====== Conteo por sector (incluye puntos en el borde) ====== */
+    const sectorLabel = (g)=>{
+      const n = sectorNumber(g?.nombre || g?.name);
+      return Number.isFinite(n) ? `S${n}` : (g?.nombre || g?.name || "Sector");
+    };
+
+    function baseSectorCountMap(){
+      const map = new Map();
+      const ordered = Array.from(geofenceById.values()).sort((a,b)=>sectorNumber(a.nombre)-sectorNumber(b.nombre));
+      for (const g of ordered){
+        const lab = sectorLabel(g);
+        map.set(lab, { label: lab, num: sectorNumber(g.nombre), color: g._color || g.color || '#9ca3af', name: g.nombre || g.name || lab, count: 0 });
+      }
+      return map;
+    }
+
+    function onSegment(px, py, x1, y1, x2, y2, eps=1e-10){
+      const cross = (px - x1)*(y2 - y1) - (py - y1)*(x2 - x1);
+      if (Math.abs(cross) > eps) return false;
+      const dot = (px - x1)*(px - x2) + (py - y1)*(py - y2);
+      return dot <= eps;
+    }
+    function pointInRing(lat, lng, ring){
+      let inside = false;
+      for (let i=0, j=ring.length-1; i<ring.length; j=i++){
+        const xi = ring[i].lng, yi = ring[i].lat;
+        const xj = ring[j].lng, yj = ring[j].lat;
+        if (onSegment(lng, lat, xi, yi, xj, yj)) return true;   // borde = dentro
+        const intersect = ((yi>lat)!==(yj>lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+    function sectorOfPoint(lat, lng){
+      for (const [id, poly] of geofenceLayers){
+        if (!poly.getBounds().contains([lat,lng])) continue;
+        const g = geofenceById.get(id);
+        if (!g) continue;
+        const lls = poly.getLatLngs();
+        const rings = Array.isArray(lls[0]) ? lls : [lls];
+        for (const ring of rings){
+          if (ring && ring.length >= 3 && pointInRing(lat, lng, ring)) return { id, g };
+        }
+      }
+      return null;
+    }
+
+    function renderSectorLegend(countMap){
+      const arr = Array.from(countMap.values()).sort((a,b)=>a.num - b.num);
+      chipsBox.innerHTML = "";
+      for (const it of arr){
+        const d = document.createElement("div");
+        d.className = "chip";
+        d.innerHTML = `<span class="dot" style="background:${it.color}"></span><span class="lbl">${it.label}</span><span class="val">${it.count}</span>`;
+        chipsBox.appendChild(d);
+      }
+    }
+
+    function updateSectorCountsFrom(latestMap){
+      if (!geofenceLayers.size) { renderSectorLegend(baseSectorCountMap()); return; }
+      const counts = baseSectorCountMap();
+      for (const [, info] of latestMap){
+        const [lat,lng] = info.coords;
+        const s = sectorOfPoint(lat, lng);
+        if (!s) continue;
+        const lab = sectorLabel(s.g);
+        if (counts.has(lab)) counts.get(lab).count++;
+        else counts.set(lab, { label: lab, num: sectorNumber(s.g.nombre), color: s.g._color || '#9ca3af', name: s.g.nombre || lab, count: 1 });
+      }
+      renderSectorLegend(counts);
+    }
+
+    // Suscripción a geocercas en Lugares
+    onSnapshot(collection(dbL,'geofences'), (snap)=>{
+      geofenceById.clear();
+      capaGeofences.clearLayers();
+      geofenceLayers.clear();
+
+      const docs = [];
+      snap.forEach(doc=>{
+        const d = doc.data()||{};
+        if (d.activo === false) return;
+        const path = d.geometry?.path || d.path || [];
+        docs.push({
+          id: doc.id,
+          nombre: d.nombre || d.name,
+          color: d.color || d.colour,
+          path
+        });
+      });
+
+      docs.forEach((g, i)=>{
+        geofenceById.set(g.id, g);
+        drawOneGeofence(g, i);
+      });
+
+      rebuildLegend();
+
+      if (lastLatestSerenos && lastLatestSerenos.size) updateSectorCountsFrom(lastLatestSerenos);
+      else renderSectorLegend(baseSectorCountMap());
+    });
+
+    // Botón GEOCERCAS
+    document.addEventListener('click', (e)=>{
+      if (e.target && e.target.id === 'btnGeo'){
+        toggleLegend();
+      }
+    });
+
+    /* Defaults UI */
+    (function init(){
+      const {fecha, turno} = todayTurnDefaults();
+      document.getElementById("fechaSerenos").value = fecha;
+      document.getElementById(`ts-${turno}`).checked = true;
+
+      document.getElementById("am-active").checked = true;
+      document.getElementById("fechaAlertas").value = fecha;
+      document.getElementById("ta-todos").checked = true;
+      document.getElementById("alertFilters").style.opacity = .45;
+      document.getElementById("alertFilters").style.pointerEvents = "none";
+    })();
+
+    /* Listeners filtros */
+    const debounce = (fn,ms=160)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
+    // Serenos
+    document.getElementById("fechaSerenos").addEventListener("change", rebuildSerenos);
+    document.querySelectorAll('input[name="turnoSerenos"]').forEach(r=> r.addEventListener("change", rebuildSerenos));
+    document.getElementById("buscador").addEventListener("input", debounce(rebuildSerenos,140));
+    document.getElementById("soloComentario").addEventListener("change", rebuildSerenos);
+    document.getElementById("btnHoyS").addEventListener("click", ()=>{
+      const {fecha, turno} = todayTurnDefaults();
+      document.getElementById("fechaSerenos").value = fecha;
+      document.getElementById(`ts-${turno}`).checked = true;
+      rebuildSerenos();
+    });
+
+    // Alertas
+    document.getElementById("am-active").addEventListener("change", ()=>{
+      document.getElementById("alertFilters").style.opacity = .45;
+      document.getElementById("alertFilters").style.pointerEvents = "none";
+      rebuildAlertas();
+    });
+    document.getElementById("am-range").addEventListener("change", ()=>{
+      document.getElementById("alertFilters").style.opacity = 1;
+      document.getElementById("alertFilters").style.pointerEvents = "auto";
+      rebuildAlertas();
+    });
+    document.getElementById("fechaAlertas").addEventListener("change", rebuildAlertas);
+    document.querySelectorAll('input[name="turnoAlertas"]').forEach(r=> r.addEventListener("change", rebuildAlertas));
+    document.getElementById("btnHoyA").addEventListener("click", ()=>{
+      const {fecha} = todayTurnDefaults();
+      document.getElementById("fechaAlertas").value = fecha;
+      document.getElementById("ta-todos").checked = true;
+      rebuildAlertas();
+    });
+
+    /* ===== Reportes ===== */
+    let allSerenosRaw = [];
+    let allAlertasRaw = [];
+
+    onSnapshot(query(collection(dbS,"asistencias"), orderBy("timestamp","desc")), (snap)=>{
+      allSerenosRaw = snap.docs.map(d=>{
+        const data=d.data()||{};
+        const when=getWhenS(data);
+        const coords=getCoords({lat:data.lat,latitud:data.latitud,latitude:data.latitude,lng:data.lng,longitud:data.longitud,longitude:data.longitude,long:data.long});
+        return {
+          Nombre:data.nombre||"", DNI:data.dni||"", Cargo:data.cargo||"",
+          Comentario:(data.comentario||"").toString().trim(),
+          Fecha: when instanceof Date && !isNaN(when) ? when.toLocaleDateString() : "",
+          Hora : when instanceof Date && !isNaN(when) ? when.toLocaleTimeString() : "",
+          Lat: coords?coords[0]:"", Lng: coords?coords[1]:"", _when: when
+        };
+      }).sort((a,b)=> b._when - a._when);
+    });
+
+    onSnapshot(collection(dbA,"alertas"), (snap)=>{
+      allAlertasRaw = snap.docs.map(d=>{
+        const data=d.data()||{};
+        const when=getWhenA(data);
+        const coords=getCoords({lat:data.lat,latitud:data.latitud,latitude:data.latitude,lng:data.lng,longitud:data.longitud,longitude:data.longitude});
+        return {
+          Tipo:data.incidente||"", Código:data.usuarioCodigo||"", Nombre:data.usuarioNombre||"",
+          Fecha: when instanceof Date && !isNaN(when) ? when.toLocaleDateString() : "",
+          Hora : when instanceof Date && !isNaN(when) ? when.toLocaleTimeString() : "",
+          Lat: coords?coords[0]:"", Lng: coords?coords[1]:"", _when: when
+        };
+      }).sort((a,b)=> b._when - a._when);
+    });
+
+    // Modal + tabla + export
+    const modal = document.getElementById("modal");
+    const modalTitle = document.getElementById("modalTitle");
+    const reportTable = document.getElementById("reportTable");
+
+    function disableMapInteractions() {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+      if (map.touchZoom) map.touchZoom.disable();
+    }
+    function enableMapInteractions() {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+      if (map.touchZoom) map.touchZoom.enable();
+    }
+
+    const openModal = ()=>{
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden","false");
+      document.body.classList.add("modal-open");
+      disableMapInteractions();
+    };
+    const closeModal = ()=>{
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden","true");
+      document.body.classList.remove("modal-open");
+      enableMapInteractions();
+    };
+
+    document.getElementById("modalClose").addEventListener("click", closeModal);
+    modal.addEventListener("click", e=>{ if (e.target===modal) closeModal(); });
+
+    const esc = v => (v ?? "").toString().replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]));
+
+    function renderTable(head, rows){
+      reportTable.querySelector("thead").innerHTML = `<tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr>`;
+      const tbody = reportTable.querySelector("tbody"); tbody.innerHTML="";
+      for (const r of rows){
+        const tr=document.createElement("tr");
+        tr.innerHTML = head.map(h=>`<td>${esc(r[h] ?? "")}</td>`).join("");
+        tbody.appendChild(tr);
+      }
+    }
+
+    function downloadCSV(filename, head, rows){
+      const escCSV = s => `"${String(s??"").replace(/"/g,'""')}"`;
+      const csvHead = head.map(escCSV).join(";");
+      const csvBody = rows.map(r => head.map(h => escCSV(r[h] ?? "")).join(";")).join("\n");
+      const blob = new Blob([csvHead+"\n"+csvBody],{type:"text/csv;charset=utf-8;"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function headFor(type){
+      if (type==="serenos") return ["Nombre","DNI","Cargo","Comentario","Fecha","Hora","Lat","Lng"];
+      if (type==="alertas") return ["Tipo","Código","Nombre","Fecha","Hora","Lat","Lng"];
+      return ["DNI","Nombre","Comentario","Cargo","Rating","Fecha","Hora","Lugar","Usuario Código","Usuario Nombre"];
+    }
+
+    function rowsAll(type){
+      if (type==="serenos") return [...allSerenosRaw];
+      if (type==="alertas") return [...allAlertasRaw];
+      return [...allCalifRaw];
+    }
+
+    function rowsByDay(type, dateStr, turno){
+      const base = parseFecha(dateStr);
+      const {start,end} = intervaloTurno(base, turno);
+      const all = rowsAll(type);
+      return all.filter(r => r._when >= start && r._when < end);
+    }
+
+    let currentReport = "serenos";
+    let currentRows = [];
+    const repFiltersBox = document.getElementById("repFilters");
+
+    function setRepDefaults(){
+      const {fecha} = todayTurnDefaults();
+      document.getElementById("rep-all").checked = true;
+      document.getElementById("repDate").value = fecha;
+      document.getElementById("rep-todos").checked = true;
+      repFiltersBox.style.display = "none";
+    }
+
+    function refreshTable(){
+      const head = headFor(currentReport);
+      const mode = document.querySelector('input[name="repMode"]:checked')?.value || "all";
+      if (mode === "all"){
+        currentRows = rowsAll(currentReport);
+      } else {
+        const dateStr = document.getElementById("repDate").value;
+        const turno = document.querySelector('input[name="repTurno"]:checked')?.value || "todos";
+        currentRows = rowsByDay(currentReport, dateStr, turno);
+      }
+      renderTable(head, currentRows);
+    }
+
+    // Eventos del modal de reporte
+    document.getElementById("rep-all").addEventListener("change", ()=>{
+      repFiltersBox.style.display = "none";
+      refreshTable();
+    });
+    document.getElementById("rep-day").addEventListener("change", ()=>{
+      repFiltersBox.style.display = "grid";
+      refreshTable();
+    });
+    document.getElementById("btnRepAplicar").addEventListener("click", refreshTable);
+
+    document.getElementById("btnExport").addEventListener("click", ()=>{
+      const head = headFor(currentReport);
+      const mode = document.querySelector('input[name="repMode"]:checked')?.value || "all";
+      const nameSuffix = (mode==="all")
+        ? "ALL"
+        : `DAY_${document.getElementById("repDate").value}_${document.querySelector('input[name="repTurno"]:checked')?.value||"todos"}`;
+      downloadCSV(`reporte_${currentReport}_${nameSuffix}_${Date.now()}.csv`, head, currentRows);
+    });
+
+    // Abrir modales
+    document.getElementById("btnReporteSerenos").addEventListener("click", ()=>{
+      currentReport = "serenos"; setRepDefaults();
+      document.getElementById("modalTitle").textContent = "Reporte • Serenos";
+      refreshTable(); openModal();
+    });
+    document.getElementById("btnReporteIncidentes").addEventListener("click", ()=>{
+      currentReport = "alertas"; setRepDefaults();
+      document.getElementById("modalTitle").textContent = "Reporte • Incidentes";
+      refreshTable(); openModal();
+    });
+    document.getElementById("btnReporteCalificaciones").addEventListener("click", ()=>{
+      currentReport = "calificaciones"; setRepDefaults();
+      document.getElementById("modalTitle").textContent = "Reporte • Calificaciones";
+      refreshTable(); openModal();
+    });
+  </script>
+</body>
+</html>
