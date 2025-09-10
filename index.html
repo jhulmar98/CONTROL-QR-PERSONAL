@@ -831,20 +831,36 @@
     let allSerenosRaw = [];
     let allAlertasRaw = [];
 
-    onSnapshot(query(collection(dbS,"asistencias"), orderBy("timestamp","desc")), (snap)=>{
-      allSerenosRaw = snap.docs.map(d=>{
-        const data=d.data()||{};
-        const when=getWhenS(data);
-        const coords=getCoords({lat:data.lat,latitud:data.latitud,latitude:data.latitude,lng:data.lng,longitud:data.longitud,longitude:data.longitude,long:data.long});
-        return {
-          Nombre:data.nombre||"", DNI:data.dni||"", Cargo:data.cargo||"",
-          Comentario:(data.comentario||"").toString().trim(),
-          Fecha: when instanceof Date && !isNaN(when) ? when.toLocaleDateString() : "",
-          Hora : when instanceof Date && !isNaN(when) ? when.toLocaleTimeString() : "",
-          Lat: coords?coords[0]:"", Lng: coords?coords[1]:"", _when: when
-        };
-      }).sort((a,b)=> b._when - a._when);
+   onSnapshot(query(collection(dbS,"asistencias"), orderBy("timestamp","desc")), (snap)=>{
+  allSerenosRaw = snap.docs.map(d=>{
+    const data = d.data()||{};
+    const when = getWhenS(data);
+    const coords = getCoords({
+      lat:data.lat, latitud:data.latitud, latitude:data.latitude,
+      lng:data.lng, longitud:data.longitud, longitude:data.longitude, long:data.long
     });
+
+    // >>> NUEVO: normalizar posible "supervisor" desde distintos nombres de campo
+    let sup = data.supervisor ?? data.supervisorNombre ?? data.encargado ?? data.jefe ?? data.usuarioNombre ?? data.usuario ?? "";
+    if (sup && typeof sup === "object") {
+      sup = sup.nombre ?? sup.name ?? JSON.stringify(sup);
+    }
+
+    return {
+      Nombre: data.nombre || "",
+      DNI: data.dni || "",
+      Cargo: data.cargo || "",
+      Supervisor: sup, // <<< NUEVO CAMPO
+      Comentario: (data.comentario||"").toString().trim(),
+      Fecha: (when instanceof Date && !isNaN(when)) ? when.toLocaleDateString() : "",
+      Hora : (when instanceof Date && !isNaN(when)) ? when.toLocaleTimeString() : "",
+      Lat  : coords ? coords[0] : "",
+      Lng  : coords ? coords[1] : "",
+      _when: when
+    };
+  }).sort((a,b)=> b._when - a._when);
+});
+
 
     onSnapshot(collection(dbA,"alertas"), (snap)=>{
       allAlertasRaw = snap.docs.map(d=>{
@@ -921,10 +937,11 @@
     }
 
     function headFor(type){
-      if (type==="serenos") return ["Nombre","DNI","Cargo","Comentario","Fecha","Hora","Lat","Lng"];
-      if (type==="alertas") return ["Tipo","Código","Nombre","Fecha","Hora","Lat","Lng"];
-      return ["DNI","Nombre","Comentario","Cargo","Rating","Fecha","Hora","Lugar","Usuario Código","Usuario Nombre"];
+    if (type==="serenos") return ["Nombre","DNI","Cargo","Supervisor","Comentario","Fecha","Hora","Lat","Lng"]; // <<< agregado "Supervisor"
+    if (type==="alertas") return ["Tipo","Código","Nombre","Fecha","Hora","Lat","Lng"];
+    return ["DNI","Nombre","Comentario","Cargo","Rating","Fecha","Hora","Lugar","Usuario Código","Usuario Nombre"];
     }
+
 
     function rowsAll(type){
       if (type==="serenos") return [...allSerenosRaw];
