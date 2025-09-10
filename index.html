@@ -368,6 +368,7 @@
         <div class="row"><strong>Nombre:</strong> ${esc(d.nombre||"-")}</div>
         <div class="row"><strong>DNI:</strong> ${esc(d.dni||"-")}</div>
         ${d.cargo?`<div class="row"><strong>Cargo:</strong> ${esc(d.cargo)}</div>`:""}
+        <div class="row"><strong>Supervisor:</strong> ${esc(d.supervisor||"-")}</div>
         <div class="row"><strong>Fecha:</strong> ${fecha}</div>
         <div class="row"><strong>Hora:</strong> ${hora}</div>
         ${c?`<div class="row"><strong>Comentario:</strong> ${esc(c)}</div>`:""}
