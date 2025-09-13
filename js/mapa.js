@@ -73,9 +73,9 @@ export const parseFecha = (v) => {
 // Intervalos de turno (T1/T2/T3/Todos) sobre una fecha base
 export const intervaloTurno = (base, turno) => {
   const start = new Date(base), end = new Date(base);
-  if (turno === "t1")      { start.setHours(6,0,0,0);  end.setHours(14,0,0,0); }
-  else if (turno === "t2") { start.setHours(14,0,0,0); end.setHours(22,0,0,0); }
-  else if (turno === "t3") { start.setHours(22,0,0,0); end.setDate(end.getDate()+1); end.setHours(6,0,0,0); }
+  if (turno === "t1")      { start.setHours(7,0,0,0);  end.setHours(15,0,0,0); }
+  else if (turno === "t2") { start.setHours(15,0,0,0); end.setHours(23,0,0,0); }
+  else if (turno === "t3") { start.setHours(23,0,0,0); end.setDate(end.getDate()+1); end.setHours(7,0,0,0); }
   else                     { start.setHours(0,0,0,0);  end.setDate(end.getDate()+1); end.setHours(0,0,0,0); }
   return { start, end };
 };
@@ -407,3 +407,4 @@ onSnapshot(collection(dbL, "geofences"), (snap) => {
   // último "latestMap". Esto evita acoplar módulos.
   renderSectorLegend(baseSectorCountMap());
 });
+
