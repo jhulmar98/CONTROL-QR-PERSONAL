@@ -85,9 +85,9 @@ export const todayTurnDefaults = () => {
   const now  = new Date();
   const base = new Date(now);
   let turno = "t1";
-  if (now.getHours() < 6)       { base.setDate(base.getDate()-1); turno = "t3"; }
-  else if (now.getHours() < 14) { turno = "t1"; }
-  else if (now.getHours() < 22) { turno = "t2"; }
+  if (now.getHours() < 7)       { base.setDate(base.getDate()-1); turno = "t3"; }
+  else if (now.getHours() < 15) { turno = "t1"; }
+  else if (now.getHours() < 23) { turno = "t2"; }
   else                          { turno = "t3"; }
   const y = base.getFullYear();
   const m = String(base.getMonth()+1).padStart(2,"0");
@@ -407,4 +407,3 @@ onSnapshot(collection(dbL, "geofences"), (snap) => {
   // último "latestMap". Esto evita acoplar módulos.
   renderSectorLegend(baseSectorCountMap());
 });
-
